@@ -1,0 +1,46 @@
+{:mvn/repos {"redplanetlabs" {:url "https://nexus.redplanetlabs.com/repository/maven-public-releases"}}
+
+ :paths ["src" "resources" "config"]
+ 
+ :aliases
+ {:test {:extra-paths ["test"]
+         :extra-deps {io.github.cognitect-labs/test-runner 
+                      {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+         :main-opts ["-m" "cognitect.test-runner"]
+         :exec-fn cognitect.test-runner.api/test}
+  :build {:deps {io.github.clojure/tools.build {:git/tag "v0.10.8"
+                                                :git/sha "2fdfd66"}
+                 org.clojure/data.json {:mvn/version "2.5.1"}}
+          :ns-default build}
+  :dev {:extra-deps {djblue/portal {:mvn/version "0.57.3"}
+                     io.github.clojure/tools.build {:git/tag "v0.10.8"
+                                                    :git/sha "2fdfd66"}}
+        
+        :jvm-opts [#_"-agentpath:/Applications/YourKit-Java-Profiler-2024.3.app/Contents/Resources/bin/mac/libyjpagent.dylib=disablestacktelemetry,exceptions=disable,delay=10000"
+                   
+                   "-XX:+UseZGC"
+                   "-XX:+ZGenerational"
+                   "-XX:MaxRAMPercentage=50"
+                   "-Djdk.attach.allowAttachSelf"
+                   "-Djava.security.manager=allow"]}}
+ ;; https://nrepl.org/nrepl/installation.html#jvmti
+
+ :jvm-opts ["-XX:+UseZGC"
+            "-XX:+ZGenerational"
+            "-XX:MaxRAMPercentage=75"
+            "-Djava.security.manager=allow"]
+
+ ;; reference for "-Djava.security.manager=allow" (requried in JDK 23+)
+ ;; https://cwiki.apache.org/confluence/display/KAFKA/KIP-1006%3A+Remove+SecurityManager+Support
+ ;; https://openjdk.org/jeps/411
+;; https://github.com/quarkusio/quarkus/issues/39634
+ ;; 
+ 
+ :deps
+ {ch.qos.logback/logback-classic                    {:mvn/version "1.5.0"}
+  org.clojure/clojure                               {:mvn/version "1.12.0"}
+  io.github.clingen-data-model/genegraph-framework
+  {:git/sha "d19a919c3ff164c9eb4f2852ff060fb5c647f88f"}
+  hato/hato                                         {:mvn/version "1.0.0"}}
+ }
+
