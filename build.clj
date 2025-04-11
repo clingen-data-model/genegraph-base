@@ -34,14 +34,15 @@
 
 (def app-name "genegraph-base")
 
-(def image-name
+(defn image-tag []
   (str
    "us-east1-docker.pkg.dev/"
-   "clingen-stage/"
-   "genegraph-stage/"
-   "genegraph-base:latest"))
+   "clingen-dx/"
+   "genegraph-prod/"
+   "genegraph-base:v"
+   (b/git-count-revs {})))
 
-(def kubernetes-deployment
+(defn kubernetes-deployment []
   {:apiVersion "apps/v1"
    :kind "Deployment"
    :metadata {:name app-name}
@@ -52,8 +53,8 @@
      :spec
      {:containers
       [{:name app-name
-        :image image-name
-        :env [{:name "GENEGRAPH_PLATFORM" :value "stage"}]
+        :image (image-tag)
+        :env [{:name "GENEGRAPH_PLATFORM" :value "prod"}]
         :ports [{:name "genegraph-port" :containerPort 8888}]
         :readinessProbe {:httpGet {:path "/ready" :port "genegraph-port"}}
         :resources {:requests {:memory "700Mi" :cpu "50m"}
@@ -70,6 +71,10 @@
                                      :values ["arm64"]}]}]}}}}}}})
 
 
+(comment
+  (b/git-count-revs {})
+
+  (b/git-process {:git-args "status --porcelain=2"}))
 ;; NOTE: must be run from shell with gcloud stuff enabled
 (defn docker-push
   [_]
@@ -82,7 +87,7 @@
    "--platform"
    "linux/arm64"
    "-t"
-   image-name
+   (image-tag)
    "--push"))
 
 (defn kubernetes-apply
@@ -91,7 +96,7 @@
         captured (process/io-task #(slurp (process/stdout p)))
         exit (process/exit-ref p)]
     (with-open [w (io/writer (process/stdin p))]
-      (json/write kubernetes-deployment w))
+      (json/write (kubernetes-deployment) w))
     (if (zero? @(process/exit-ref p))
       (println @captured)
       (println "non-zero exit code"))))
