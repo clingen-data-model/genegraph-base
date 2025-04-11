@@ -101,3 +101,7 @@
       (println @captured)
       (println "non-zero exit code"))))
 
+(defn deploy [_]
+  (uber nil)
+  (docker-push nil)
+  (kubernetes-apply nil))
