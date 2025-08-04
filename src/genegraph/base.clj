@@ -19,7 +19,7 @@
 (def admin-env
   (if (or (System/getenv "DX_JAAS_CONFIG_DEV")
           (System/getenv "DX_JAAS_CONFIG")) ; prevent this in cloud deployments
-    {:platform "local"
+    {:platform "prod"
      :dataexchange-genegraph (System/getenv "DX_JAAS_CONFIG")
      :local-data-path "data/"}
     {}))
@@ -46,7 +46,8 @@
                    :fs-handle {:type :gcs
                                :bucket "genegraph-base-stage"}
                    :local-data-path "/data")
-    "prod" (assoc (env/build-environment "974091131481" ["dataexchange-genegraph"])
+    "prod" (assoc (env/build-environment "974091131481" ["dataexchange-genegraph"
+                                                         "affils-service-key"])
                   :version 1
                   :name "prod"
                   :kafka-user "User:2592237"

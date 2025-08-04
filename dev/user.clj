@@ -59,6 +59,7 @@
   (p/start gv-seed-base-event)
   (->> (-> "base.edn" io/resource slurp edn/read-string)
        #_(filter #(= "http://www.w3.org/1999/02/22-rdf-syntax-ns#" (:name %)))
+       (filter #(= "https://affils.clinicalgenome.org/" (:name %)))
        (run! #(p/publish (get-in gv-seed-base-event
                                  [:topics :fetch-base])
                          {::event/data %
