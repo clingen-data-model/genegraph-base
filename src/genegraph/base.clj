@@ -19,15 +19,17 @@
 (def admin-env
   (if (or (System/getenv "DX_JAAS_CONFIG_DEV")
           (System/getenv "DX_JAAS_CONFIG")) ; prevent this in cloud deployments
-    {:platform "prod"
+    {:platform "local"
      :dataexchange-genegraph (System/getenv "DX_JAAS_CONFIG")
      :local-data-path "data/"}
     {}))
 
 (def local-env
   (case (or (:platform admin-env) (System/getenv "GENEGRAPH_PLATFORM"))
-    "local" {:fs-handle {:type :file :base "data/base/"}
-             :local-data-path "data/"}
+    "local" (assoc (env/build-environment "974091131481" ["dataexchange-genegraph"
+                                                          "affils-service-key"])
+                   :fs-handle {:type :file :base "data/base/"}
+                   :local-data-path "data/")
     "dev" (assoc (env/build-environment "522856288592" ["dataexchange-genegraph"])
                  :version 1
                  :name "dev"
@@ -89,15 +91,21 @@
 (defn success? [{status ::http-status}]
   (and (<= 200 status) (< status 400)))
 
+(defn event->headers [event]
+  (-> event
+      (get-in [::event/data :headers])
+      (update-vals #(if (keyword? %) (get env %) %))))
+
 (defn fetch-file-fn [event]
   (log/info :fn ::fetch-file-fn
             :source (get-in event [::event/data :source])
             :name  (get-in event [::event/data :name])
             :status :started)
-  (let [response (hc/get (get-in event [::event/data :source])
-                         {:http-client (hc/build-http-client {:redirect-policy :always})
-                          :as :stream})]
-
+  (let [headers (event->headers event)
+        base-opts {:http-client (hc/build-http-client {:redirect-policy :always})
+                   :as :stream}
+        opts (if headers (assoc base-opts :headers headers) base-opts)
+        response (hc/get (get-in event [::event/data :source]) opts)]
     (when (instance? InputStream (:body response))
       (with-open [os (io/output-stream (storage/as-handle (output-handle event)))]
         (.transferTo (:body response) os)))

@@ -191,4 +191,9 @@
  {:name "https://www.ncbi.nlm.nih.gov/gtr/"
   :source "https://ftp.ncbi.nlm.nih.gov/pub/GTR/data/gtr_ftp.xml.gz"
   :target "gtr.xml.gz"
-  :format :genegraph.api.base/gtr}]
+  :format :genegraph.api.base/gtr}
+ {:name "https://affils.clinicalgenome.org/"
+  :source "https://affils.clinicalgenome.org/api/affiliations_list/"
+  :target "affils.json"
+  :format :genegraph.api.base.affils-json
+  :headers {"X-Api-Key" :affils-service-key}}]

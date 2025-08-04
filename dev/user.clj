@@ -83,8 +83,15 @@
                          {::event/data %
                           ::event/key (:name %)})))
   
+  
 
-
+  (->> (-> "base.edn" io/resource slurp edn/read-string)
+       (filter #(= "https://affils.clinicalgenome.org/" (:name %)))
+       (run! #(p/publish (get-in base-test-app
+                                 [:topics :fetch-base-events])
+                         {::event/data %
+                          ::event/key (:name %)})))
+  
   )
 
 (comment

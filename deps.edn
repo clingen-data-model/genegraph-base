@@ -40,7 +40,7 @@
  {ch.qos.logback/logback-classic                    {:mvn/version "1.5.0"}
   org.clojure/clojure                               {:mvn/version "1.12.0"}
   io.github.clingen-data-model/genegraph-framework
-  {:git/sha "d70fb5bf8f5adb31fef4088ed44d25d0bf0544f7"}
+  {:git/sha "4c6397ef3858612f4701faea626fd2e55493f641"}
   hato/hato                                         {:mvn/version "1.0.0"}}
  }
 
