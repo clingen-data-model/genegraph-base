@@ -27,7 +27,8 @@
 (def local-env
   (case (or (:platform admin-env) (System/getenv "GENEGRAPH_PLATFORM"))
     "local" (assoc (env/build-environment "974091131481" ["dataexchange-genegraph"
-                                                          "affils-service-key"])
+                                                          "affils-service-key"
+                                                          "omim-thn"])
                    :fs-handle {:type :file :base "data/base/"}
                    :local-data-path "data/")
     "dev" (assoc (env/build-environment "522856288592" ["dataexchange-genegraph"])
@@ -47,7 +48,8 @@
                                :bucket "genegraph-base-stage"}
                    :local-data-path "/data")
     "prod" (assoc (env/build-environment "974091131481" ["dataexchange-genegraph"
-                                                         "affils-service-key"])
+                                                         "affils-service-key"
+                                                         "omim-thn"])
                   :version 1
                   :name "prod"
                   :kafka-user "User:2592237"
@@ -97,6 +99,15 @@
       (get-in [::event/data :headers])
       (update-vals #(if (keyword? %) (get env %) %))))
 
+(defn embed-secrets-in-source [source-url]
+  (if-let [[_ first-section secret second-section] (re-find #"(.*)\{\{(.+)\}\}(.*)" source-url)]
+    (str first-section (get env (keyword secret)) second-section)
+    source-url))
+
+(embed-secrets-in-source "https://data.omim.org/downloads/{{omim-thn}}/genemap2.txt")
+(embed-secrets-in-source "https://www.ncbi.nlm.nih.gov/gtr/")
+(get env :omim-thn)
+
 (defn fetch-file-fn [event]
   (log/info :fn ::fetch-file-fn
             :source (get-in event [::event/data :source])
@@ -106,7 +117,9 @@
         base-opts {:http-client (hc/build-http-client {:redirect-policy :always})
                    :as :stream}
         opts (if headers (assoc base-opts :headers headers) base-opts)
-        response (hc/get (get-in event [::event/data :source]) opts)]
+        response (hc/get (embed-secrets-in-source
+                          (get-in event [::event/data :source]))
+                         opts)]
     (when (instance? InputStream (:body response))
       (with-open [os (io/output-stream (storage/as-handle (output-handle event)))]
         (.transferTo (:body response) os)))
@@ -201,5 +214,6 @@
                                  (log/info :fn ::-main
                                            :msg "stopping genegraph")
                                  (reset! run-atom false)
-                                 (p/stop app))))
+                                 (p/stop app)
+                                 (Thread/sleep 5000))))
     (p/start app)))

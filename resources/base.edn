@@ -195,5 +195,9 @@
  {:name "https://affils.clinicalgenome.org/"
   :source "https://affils.clinicalgenome.org/api/affiliations_list/"
   :target "affils.json"
-  :format :genegraph.api.base.affils-json
-  :headers {"X-Api-Key" :affils-service-key}}]
+  :format :genegraph.api.base/affils-json
+  :headers {"X-Api-Key" :affils-service-key}}
+ {:name "https://omim.org/genemap"
+  :source "https://data.omim.org/downloads/{{omim-thn}}/genemap2.txt"
+  :target "omim-genemap.txt"
+  :format :genegraph.api.base/omim-genemap}]
