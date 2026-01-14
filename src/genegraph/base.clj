@@ -13,7 +13,11 @@
             [clojure.edn :as edn]
             [clojure.java.io :as io])
   (:import [java.io File InputStream OutputStream]
-           [java.nio.channels Channels])
+           [java.nio.channels Channels]
+           [java.time Instant ZonedDateTime]
+           [java.time.temporal TemporalUnit Temporal]
+           [java.util.concurrent ScheduledThreadPoolExecutor
+            ExecutorService ScheduledExecutorService TimeUnit])
   (:gen-class))
 
 (def admin-env
@@ -194,6 +198,9 @@
             (assoc fetch-base-events-topic
                    :type :kafka-consumer-group-topic
                    :kafka-consumer-group consumer-group)
+            :scheduled-fetch-base
+            {:type :simple-queue-topic
+             :name :scheduled-fetch-base}
             :base-data
             (assoc base-data-topic
                    :type :kafka-producer-topic)}
@@ -201,6 +208,18 @@
                                    :kafka-cluster :data-exchange
                                    :kafka-transactional-id (qualified-kafka-name "fetch-base"))}
    :http-servers ready-server})
+
+(defonce update-publisher-executor
+  (ScheduledThreadPoolExecutor. 1))
+
+(defn check-for-base-updates [app]
+  (.scheduleAtFixedRate update-publisher-executor
+                        (fn [])
+                        0
+                        1
+                        TimeUnit/MINUTES))
+
+
 
 
 (defn -main [& args]

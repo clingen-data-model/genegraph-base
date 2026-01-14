@@ -59,7 +59,13 @@
   (p/start gv-seed-base-event)
   (->> (-> "base.edn" io/resource slurp edn/read-string)
        #_(filter #(= "http://www.w3.org/1999/02/22-rdf-syntax-ns#" (:name %)))
-       (filter #(= "https://affils.clinicalgenome.org/" (:name %)))
+       #_(filter #(= "http://purl.obolibrary.org/obo/mondo.owl" (:name %)))
+       #_(filter #(= "http://www.ebi.ac.uk/efo/efo-base.owl" (:name %)))
+       #_(filter #(re-find #"sepio" (:name %)))
+       #_(mapv :name)
+       
+       #_tap>
+       
        (run! #(p/publish (get-in gv-seed-base-event
                                  [:topics :fetch-base])
                          {::event/data %

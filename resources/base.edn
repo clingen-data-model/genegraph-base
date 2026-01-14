@@ -1,4 +1,57 @@
-[{:name "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+[{:name "http://purl.obolibrary.org/obo/sepio-clingen-dosage-valueset"
+  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-dosage/sepio-clingen-dosage-valueset.owl"
+  :target "sepio-clingen-dosage-valueset.owl"
+  :format :genegraph.framework.storage.rdf/rdf-xml}
+ {:name "http://purl.obolibrary.org/obo/sepio-clingen-dosage.owl"
+  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-dosage/sepio-clingen-dosage.owl"
+  :target "sepio-clingen-dosage.owl"
+  :format :genegraph.framework.storage.rdf/rdf-xml}
+ {:name "http://dataexchange.clinicalgenome.org/models/sepio-clingen-dosage-shapes.ttl"
+  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-dosage/sepio-clingen-dosage-shapes.ttl"
+  :target "sepio-clingen-dosage-shapes.ttl"
+  :format :genegraph.framework.storage.rdf/turtle}
+ {:name "http://dataexchange.clinicalgenome.org/models/sepio-clingen-actionability-shapes.ttl"
+  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-actionability/sepio-clingen-actionability-shapes.ttl"
+  :target "sepio-clingen-actionability-shapes.ttl"
+  :format :genegraph.framework.storage.rdf/turtle}
+  {:name "http://purl.obolibrary.org/obo/sepio-clingen-actionability"
+  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-actionability/sepio-clingen-actionability.ttl"
+  :target "sepio-clingen-actionability.ttl"
+  :format :genegraph.framework.storage.rdf/turtle}
+  {:name "http://dataexchange.clinicalgenome.org/models/sepio-clingen-actionability-valueset"
+  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-actionability/sepio-clingen-actionability-valueset.ttl"
+  :target "sepio-clingen-actionability-valueset.ttl"
+  :format :genegraph.framework.storage.rdf/turtle}
+ {:name "http://purl.obolibrary.org/obo/sepio-valueset.owl"
+  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/sepio-valueset.owl" 
+  :target "sepio-valueset.owl"
+  :format :genegraph.framework.storage.rdf/rdf-xml}
+ {:name "http://purl.obolibrary.org/obo/sepio.owl"
+  :source
+  "https://raw.githubusercontent.com/monarch-initiative/SEPIO-ontology/master/sepio.owl",
+  :target "sepio.owl",
+  :format :genegraph.framework.storage.rdf/rdf-xml}
+ {:name "http://purl.obolibrary.org/obo/sepio-clingen-acmg.owl"
+  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-acmg/sepio-clingen-acmg.owl",
+  :target "sepio-clingen-acmg.owl",
+  :format :genegraph.framework.storage.rdf/rdf-xml}
+ {:name "http://purl.obolibrary.org/obo/sepio-clingen-acmg-valueset.owl"
+  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-acmg/sepio-clingen-acmg-valueset.owl",
+  :target "sepio-clingen-acmg-valueset.owl",
+  :format :genegraph.framework.storage.rdf/rdf-xml}
+ {:name "http://purl.obolibrary.org/obo/sepio-clingen-gene-validity"
+  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-gene-validity/sepio-clingen-gene-validity.ttl"
+  :target "sepio-clingen-gene-validity.ttl"
+  :format :genegraph.framework.storage.rdf/turtle}
+ {:name "http://purl.obolibrary.org/obo/sepio-clingen-gene-validity-valueset"
+  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-gene-validity/sepio-clingen-gene-validity-valueset.ttl"
+  :target "sepio-clingen-gene-validity-valueset.ttl"
+  :format :genegraph.framework.storage.rdf/turtle}
+ {:name "http://purl.obolibrary.org/obo/sepio-clingen-gene-validity-shapes"
+  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-gene-validity/sepio-clingen-gene-validity-shapes.ttl"
+  :target "sepio-clingen-gene-validity-shapes.ttl"
+  :format :genegraph.framework.storage.rdf/turtle}
+ {:name "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   :source "http://www.w3.org/1999/02/22-rdf-syntax-ns.ttl",
   :target "rdf.ttl",
   :format :genegraph.framework.storage.rdf/turtle}
@@ -42,63 +95,6 @@
   :source "http://purl.obolibrary.org/obo/ro.owl",
   :target "ro.owl",
   :format :genegraph.framework.storage.rdf/rdf-xml}
- #_{:name "http://purl.obolibrary.org/obo/geno.owl"
-  :source "https://raw.githubusercontent.com/monarch-initiative/GENO-ontology/develop/geno.owl"
-  :target "geno.owl"
-  :format :genegraph.framework.storage.rdf/rdf-xml}
- #_{:name "http://purl.obolibrary.org/obo/sepio-clingen-dosage-valueset"
-  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-dosage/sepio-clingen-dosage-valueset.owl"
-  :target "sepio-clingen-dosage-valueset.owl"
-  :format :genegraph.framework.storage.rdf/rdf-xml}
- #_{:name "http://purl.obolibrary.org/obo/sepio-clingen-dosage.owl"
-  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-dosage/sepio-clingen-dosage.owl"
-  :target "sepio-clingen-dosage.owl"
-  :format :genegraph.framework.storage.rdf/rdf-xml}
- #_{:name "http://dataexchange.clinicalgenome.org/models/sepio-clingen-dosage-shapes.ttl"
-  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-dosage/sepio-clingen-dosage-shapes.ttl"
-  :target "sepio-clingen-dosage-shapes.ttl"
-  :format :genegraph.framework.storage.rdf/turtle}
- #_{:name "http://dataexchange.clinicalgenome.org/models/sepio-clingen-actionability-shapes.ttl"
-  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-actionability/sepio-clingen-actionability-shapes.ttl"
-  :target "sepio-clingen-actionability-shapes.ttl"
-  :format :genegraph.framework.storage.rdf/turtle}
- #_{:name "http://purl.obolibrary.org/obo/sepio-clingen-actionability"
-  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-actionability/sepio-clingen-actionability.ttl"
-  :target "sepio-clingen-actionability.ttl"
-  :format :genegraph.framework.storage.rdf/turtle}
- #_{:name "http://dataexchange.clinicalgenome.org/models/sepio-clingen-actionability-valueset"
-  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-actionability/sepio-clingen-actionability-valueset.ttl"
-  :target "sepio-clingen-actionability-valueset.ttl"
-  :format :genegraph.framework.storage.rdf/turtle}
- #_{:name "http://purl.obolibrary.org/obo/sepio-valueset.owl"
-  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/sepio-valueset.owl" 
-  :target "sepio-valueset.owl"
-  :format :genegraph.framework.storage.rdf/rdf-xml}
- #_{:name "http://purl.obolibrary.org/obo/sepio.owl"
-  :source
-  "https://raw.githubusercontent.com/monarch-initiative/SEPIO-ontology/master/sepio.owl",
-  :target "sepio.owl",
-  :format :genegraph.framework.storage.rdf/rdf-xml}
- #_{:name "http://purl.obolibrary.org/obo/sepio-clingen-acmg.owl"
-  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-acmg/sepio-clingen-acmg.owl",
-  :target "sepio-clingen-acmg.owl",
-  :format :genegraph.framework.storage.rdf/rdf-xml}
- #_{:name "http://purl.obolibrary.org/obo/sepio-clingen-acmg-valueset.owl"
-  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-acmg/sepio-clingen-acmg-valueset.owl",
-  :target "sepio-clingen-acmg-valueset.owl",
-  :format :genegraph.framework.storage.rdf/rdf-xml}
- #_{:name "http://purl.obolibrary.org/obo/sepio-clingen-gene-validity"
-  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-gene-validity/sepio-clingen-gene-validity.ttl"
-  :target "sepio-clingen-gene-validity.ttl"
-  :format :genegraph.framework.storage.rdf/turtle}
- #_{:name "http://purl.obolibrary.org/obo/sepio-clingen-gene-validity-valueset"
-  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-gene-validity/sepio-clingen-gene-validity-valueset.ttl"
-  :target "sepio-clingen-gene-validity-valueset.ttl"
-  :format :genegraph.framework.storage.rdf/turtle}
- #_{:name "http://purl.obolibrary.org/obo/sepio-clingen-gene-validity-shapes"
-  :source "https://raw.githubusercontent.com/clingen-data-model/SEPIO-ontology/master/src/ontology/extensions/clingen/clingen-gene-validity/sepio-clingen-gene-validity-shapes.ttl"
-  :target "sepio-clingen-gene-validity-shapes.ttl"
-  :format :genegraph.framework.storage.rdf/turtle}
  {:name "http://purl.obolibrary.org/obo/hp.owl"
   :source "http://purl.obolibrary.org/obo/hp.owl",
   :target "hp.owl",
@@ -107,52 +103,18 @@
   :source "http://purl.obolibrary.org/obo/mondo.owl",
   :target "mondo.owl",
   :format :genegraph.framework.storage.rdf/rdf-xml}
- {:name "http://www.ebi.ac.uk/efo"
-  :source "http://www.ebi.ac.uk/efo/efo.owl"
+ #_{:name "http://www.ebi.ac.uk/efo"
+    :source "http://www.ebi.ac.uk/efo/efo.owl"
   :target "efo.owl"
+  :format :genegraph.framework.storage.rdf/rdf-xml}
+ {:name "http://www.ebi.ac.uk/efo/efo-base.owl"
+  :source "http://www.ebi.ac.uk/efo/efo-base.owl"
+  :target "efo-base.owl",
   :format :genegraph.framework.storage.rdf/rdf-xml}
  {:name "https://www.genenames.org/"
   :source "https://storage.googleapis.com/public-download-files/hgnc/json/json/hgnc_complete_set.json"
   :target "hgnc.json",
   :format :genegraph.api.base/hgnc}
- #_{:name "http://dataexchange.clinicalgenome.org/terms"
-  :source "https://raw.githubusercontent.com/clingen-data-model/clingen-terms/master/clingen-terms.ttl"
-  :target "clingen-terms.ttl"
-  :format :genegraph.framework.storage.rdf/turtle}
- #_{:name "http://dataexchange.clinicalgenome.org/build-assembly-chr.ttl"
-  :source "https://raw.githubusercontent.com/clingen-data-model/clingen-terms/master/build-assembly-chr.ttl"
-  :target "build-assembly-chr.ttl"
-  :format :genegraph.framework.storage.rdf/turtle}
- #_{:name "http://ftp.ncbi.nih.gov/GRCh37.p13"
-  :source "http://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.25_GRCh37.p13/GCF_000001405.25_GRCh37.p13_feature_table.txt.gz"
-  :target "ncbi_grch37_features.txt.gz"
-  :format :genegraph.api.base/features}
- #_{:name "http://ftp.ncbi.nih.gov/GRCh38.p13"
-  :source "http://ftp.ncbi.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.39_GRCh38.p13/GCF_000001405.39_GRCh38.p13_feature_table.txt.gz"
-  :target "ncbi_grch38_features.txt.gz"
-  :format :genegraph.api.base/features}
- #_{:name "https://decipher.sanger.ac.uk/HI_Predictions.bed.gz"
-  :source "https://decipher.sanger.ac.uk/files/downloads/HI_Predictions_Version3.bed.gz"
-  :target "Deciher_HI_Predictions_Version3.bed.gz"
-  :format :hi-index}
- #_{:name "https://storage.googleapis.com/gnomad-public/lof_metrics.by_gene"
-  :source "https://storage.googleapis.com/gcp-public-data--gnomad/release/2.1.1/constraint/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz"
-  :target "gnomad_v2.1.1.lof_metrics_by_gene.txt.gz"
-  :format :loss-intolerance}
- {:name "http://dataexchange.clinicalgenome.org/affiliations"
-  :source "https://docs.google.com/spreadsheets/d/1IF9GiP8iiFx1CndgqdWNGx4A_uM2GsWnV7GSiUO33bs/gviz/tq?tqx=out:csv&sheet=VCI%2FGCI%20Affiliations%20List"
-  :target "affiliations.csv"
-  :format :genegraph.api.base/affiliations}
- #_{:name "http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/cytoBand.txt.gz"
-  :source "http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/cytoBand.txt.gz"
-  :target "ucsc_cytoband_hg19.txt.gz"
-  :format :genegraph.gene-validity.base/ucsc-cytoband
-  :genegraph.gene-validity.base.ucsc-cytoband/assembly :hg19}
- #_{:name "http://hgdownload.cse.ucsc.edu/goldenPath/hg38/database/cytoBand.txt.gz"
-  :source "http://hgdownload.cse.ucsc.edu/goldenPath/hg38/database/cytoBand.txt.gz"
-  :target "ucsc_cytoband_hg38.txt.gz"
-  :format :genegraph.gene-validity.base/ucsc-cytoband
-  :genegraph.gene-validity.base.ucsc-cytoband/assembly :hg38}
  {:name "http://dataexchange.clinicalgenome.org/gci-express"
   :source "https://raw.githubusercontent.com/clingen-data-model/data-exchange-shared-json/master/json-from-gene-express/gci-express-with-entrez-ids.json"
   :target "gci-express-with-entrez-ids.json"

@@ -19,10 +19,9 @@
         :jvm-opts [#_"-agentpath:/Applications/YourKit-Java-Profiler-2024.3.app/Contents/Resources/bin/mac/libyjpagent.dylib=disablestacktelemetry,exceptions=disable,delay=10000"
                    
                    "-XX:+UseZGC"
-                   "-XX:+ZGenerational"
                    "-XX:MaxRAMPercentage=50"
                    "-Djdk.attach.allowAttachSelf"
-                   "-Djava.security.manager=allow"]}}
+                   "--enable-native-access=ALL-UNNAMED"]}}
  ;; https://nrepl.org/nrepl/installation.html#jvmti
 
  :jvm-opts ["-XX:+UseZGC"
@@ -40,7 +39,7 @@
  {ch.qos.logback/logback-classic                    {:mvn/version "1.5.0"}
   org.clojure/clojure                               {:mvn/version "1.12.0"}
   io.github.clingen-data-model/genegraph-framework
-  {:git/sha "4c6397ef3858612f4701faea626fd2e55493f641"}
+  {:git/sha "d6fc1a5bc071bafc8a94adc0790dc6a5b8e8497e"}
   hato/hato                                         {:mvn/version "1.0.0"}}
  }
 
