@@ -55,10 +55,13 @@
                    :create-producer true)}})
 
 (comment
+  "http://dataexchange.clinicalgenome.org/gci-express"
   (def gv-seed-base-event (p/init gv-seed-base-event-def))
   (p/start gv-seed-base-event)
+  (p/stop gv-seed-base-event)
   (->> (-> "base.edn" io/resource slurp edn/read-string)
-       #_(filter #(= "http://www.w3.org/1999/02/22-rdf-syntax-ns#" (:name %)))
+       #_(filter #(= "http://dataexchange.clinicalgenome.org/gci-express" (:name %)))
+       (filter #(= "http://purl.obolibrary.org/obo/sepio-clingen-gene-validity" (:name %)))
        #_(filter #(= "http://purl.obolibrary.org/obo/mondo.owl" (:name %)))
        #_(filter #(= "http://www.ebi.ac.uk/efo/efo-base.owl" (:name %)))
        #_(filter #(re-find #"sepio" (:name %)))
