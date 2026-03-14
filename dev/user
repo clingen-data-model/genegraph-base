@@ -3,7 +3,6 @@
             [genegraph.framework.event :as event]
             [genegraph.framework.protocol :as p]
             [genegraph.framework.kafka.admin :as kafka-admin]
-            [genegraph.framework.storage :as storage]
             [portal.api :as portal]
             [io.pedestal.interceptor :as interceptor]
             [io.pedestal.log :as log]
@@ -20,38 +19,24 @@
 
   )
 
-(comment
-  (->> base/base-files
-       
-       tap>)
-  )
-
 
 (def process-base-interceptor
   (interceptor/interceptor
-   {:name :process-base
-    :enter #(clojure.pprint/pprint (::event/data %))}))
+   {:enter #(clojure.pprint/pprint (::event/data %))}))
 
 (def base-test-app-def
   {:type :genegraph-app
    :topics {:fetch-base-events
             {:name :fetch-base-events
              :type :simple-queue-topic}
-            :poll-base-records
-            {:name :poll-base-records
-             :type :timer-topic
-             :interval (* 1000 10)}
             :base-data
             {:name :base-data
              :type :simple-queue-topic}}
    :processors {:fetch-base base/fetch-base-processor
                 :process-base {:type :processor
                                :subscribe :base-data
-                               :interceptors [process-base-interceptor]}
-                :poll-base-processor base/poll-base-processor}
+                               :interceptors [process-base-interceptor]}}
    :http-servers base/ready-server})
-
-
 
 
 (comment
@@ -70,22 +55,11 @@
                    :create-producer true)}})
 
 (comment
-  "http://dataexchange.clinicalgenome.org/gci-express"
-  "https://www.ncbi.nlm.nih.gov/clinvar/" 
   (def gv-seed-base-event (p/init gv-seed-base-event-def))
   (p/start gv-seed-base-event)
-  (p/stop gv-seed-base-event)
   (->> (-> "base.edn" io/resource slurp edn/read-string)
-       (filter #(= "https://www.ncbi.nlm.nih.gov/clinvar/" (:name %)))
-       #_(filter #(= "http://dataexchange.clinicalgenome.org/gci-express" (:name %)))
-       #_(filter #(= "http://purl.obolibrary.org/obo/sepio-clingen-gene-validity" (:name %)))
-       #_(filter #(= "http://purl.obolibrary.org/obo/mondo.owl" (:name %)))
-       #_(filter #(= "http://www.ebi.ac.uk/efo/efo-base.owl" (:name %)))
-       #_(filter #(re-find #"sepio" (:name %)))
-       #_(mapv :name)
-       
-       #_tap>
-       
+       #_(filter #(= "http://www.w3.org/1999/02/22-rdf-syntax-ns#" (:name %)))
+       (filter #(= "https://affils.clinicalgenome.org/" (:name %)))
        (run! #(p/publish (get-in gv-seed-base-event
                                  [:topics :fetch-base])
                          {::event/data %
@@ -114,6 +88,13 @@
 
   (->> (-> "base.edn" io/resource slurp edn/read-string)
        (filter #(= "https://affils.clinicalgenome.org/" (:name %)))
+       (run! #(p/publish (get-in base-test-app
+                                 [:topics :fetch-base-events])
+                         {::event/data %
+                          ::event/key (:name %)})))
+
+  (->> (-> "base.edn" io/resource slurp edn/read-string)
+       (filter #(= "https://omim.org/genemap" (:name %)))
        (run! #(p/publish (get-in base-test-app
                                  [:topics :fetch-base-events])
                          {::event/data %
@@ -184,28 +165,3 @@
   )
 
 
-(comment
-  (->
-   (storage/as-handle
-    {:type :gcs
-     :bucket "genegraph-base"
-     :path "clinvar.xml.gz"})
-   .getMd5)
-
-    (->
-   (storage/as-handle
-    {:type :gcs
-     :bucket "genegraph-base"
-     :path "clinvar.xml.gz"})
-   .getMd5ToHexString)
-
-  (-> "/Users/tristan/Downloads/ClinVarVCVRelease_00-latest.xml.gz.md5"
-      slurp)
-
-  (->
-   (storage/as-handle
-    {:type :gcs
-     :bucket "genegraph-base"
-     :path "clinvar.xml.gz"})
-   .getCrc32c)
-  )

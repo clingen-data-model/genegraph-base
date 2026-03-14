@@ -1,0 +1,288 @@
+* Strategy: Automatic Base Data Updates
+
+** Goal
+
+Eliminate manual Kafka message triggers for base data refreshes. Files should
+update automatically when their sources change, via two complementary mechanisms:
+
+1. A **scheduled poller** that checks for changes on a daily cadence (MONDO,
+   ClinVar, HPO, and other third-party files).
+2. A **GitHub webhook endpoint** that triggers an immediate fetch whenever a
+   relevant commit is pushed to a watched repository (SEPIO ontologies,
+   gci-express, missing-dosage-curations, genegraph-resources, etc.).
+
+Both mechanisms converge on the same fetch pipeline: they publish events to the
+=:fetch-base-events= topic, which the existing =fetch-base-processor= already
+handles. The =add-prior-hash= / =publish-base-file= interceptors already
+suppress re-publication when the downloaded file is identical to what is stored,
+so both mechanisms are safe to fire liberally.
+
+** Existing Infrastructure to Build On
+
+- =check-for-base-updates= — skeleton scheduler already present in
+  =genegraph/base.clj=, wired to a =ScheduledThreadPoolExecutor= that fires
+  every minute. The body is empty; this is where polling logic lives.
+- =:scheduled-fetch-base= — a =:simple-queue-topic= already declared in
+  =base-app-def=; can be used as an intermediate queue between the scheduler
+  and the processor if needed, or the scheduler can publish directly to
+  =:fetch-base-events=.
+- =add-prior-hash= / =publish-base-file= — already detect unchanged files via
+  CRC32C and suppress downstream Kafka messages.
+- HTTP server (=ready-server=) — already running; webhook endpoint can be added
+  here.
+
+** Phase 1: Scheduled Polling
+
+*** 1.1 Annotate base.edn
+
+Add two optional keys to entries in =resources/base.edn=:
+
+#+begin_src clojure
+;; Poll this file once per day:
+{:name    "http://purl.obolibrary.org/obo/mondo.owl"
+ :source  "http://purl.obolibrary.org/obo/mondo.owl"
+ :target  "mondo.owl"
+ :format  :genegraph.framework.storage.rdf/rdf-xml
+ :poll    true}
+
+;; ClinVar: check the MD5 sidecar before downloading the large file:
+{:name           "https://www.ncbi.nlm.nih.gov/clinvar/"
+ :source         "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/xml/ClinVarVCVRelease_00-latest.xml.gz"
+ :target         "clinvar.xml.gz"
+ :format         :genegraph.api.base/clinvar
+ :poll           true
+ :hash-check-url "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/xml/ClinVarVCVRelease_00-latest.xml.gz.md5"
+ :hash-check-type :md5hex}
+#+end_src
+
+Entries with =:poll true= are candidates for daily refresh. Entries with
+=:hash-check-url= will have that URL fetched first; the downloaded hash string
+is compared to the stored object's hash before deciding whether to trigger a
+full download.
+
+Initial candidates for =:poll true=: MONDO, ClinVar, HPO, HGNC, EFO, GenCC,
+GTR, ClinVar submitters. GitHub-sourced files are covered by the webhook instead
+and do not need polling (though adding =:poll true= as a fallback is safe).
+
+*** 1.2 Track Last-Poll Time
+
+Maintain a simple in-memory atom:
+
+#+begin_src clojure
+(defonce last-poll-times (atom {}))
+;; key: :name string of the entry, value: java.time.Instant
+#+end_src
+
+The poll interval is one day. A file is eligible for a poll if
+=(Instant/now).isAfter(last-poll + 24h)= or if no record exists.
+
+Because the atom is in-memory only it resets on restart, causing one round of
+fetches on startup. This is acceptable and desirable: it ensures the stored
+files are fresh after any deployment.
+
+*** 1.3 Pre-check Interceptor (hash-check-url)
+
+Add an interceptor =check-remote-hash= that runs before =fetch-file=:
+
+- If the event's =::event/data= has no =:hash-check-url=, pass through
+  unchanged.
+- Otherwise, perform a lightweight HTTP GET on =:hash-check-url=, parse the
+  hash string from the response body.
+- Compare it to the hash of the currently stored object (using the existing
+  =stored-object-hash= helper with =:hash-check-type= as the algorithm).
+- If they match, short-circuit the chain by returning the event with a
+  =::skip true= flag.
+
+Add a guard at the start of =fetch-file= and =publish-base-file= that returns
+immediately when =::skip= is set.
+
+The updated interceptor chain for =fetch-base-processor=:
+
+#+begin_src clojure
+:interceptors [add-prior-hash
+               check-remote-hash   ;; new — skips if hash-check-url matches
+               fetch-file
+               publish-base-file]
+#+end_src
+
+*** 1.4 Implement check-for-base-updates
+
+Replace the empty lambda in =check-for-base-updates= with logic that:
+
+1. Filters =base-files= for entries where =:poll true=.
+2. For each, checks whether 24 h have elapsed since =last-poll-times=.
+3. If eligible, publishes a fetch event to the app's =:fetch-base-events= topic
+   and records the current =Instant= in =last-poll-times=.
+
+The scheduler fires every minute (already configured). The 24 h gate inside the
+function controls actual frequency, keeping the scheduler interval decoupled
+from the poll interval.
+
+The function needs a reference to the running app (or directly to the topic) to
+call =p/publish=. Pass the app as a parameter, stored in a closure when
+=check-for-base-updates= is called from =-main= after =p/start=.
+
+#+begin_src clojure
+(defn check-for-base-updates [app]
+  (let [now (Instant/now)
+        poll-entries (filter :poll base-files)]
+    (doseq [entry poll-entries]
+      (let [last-poll (get @last-poll-times (:name entry))
+            due? (or (nil? last-poll)
+                     (.isAfter now (.plusSeconds last-poll 86400)))]
+        (when due?
+          (swap! last-poll-times assoc (:name entry) now)
+          (p/publish (get-in app [:topics :fetch-base-events])
+                     {::event/key  (:name entry)
+                      ::event/data entry}))))))
+#+end_src
+
+The scheduled executor then becomes:
+
+#+begin_src clojure
+(defn start-update-scheduler [app]
+  (.scheduleAtFixedRate update-publisher-executor
+                        #(check-for-base-updates app)
+                        0
+                        1
+                        TimeUnit/MINUTES))
+#+end_src
+
+Called from =-main= after =(p/start app)=.
+
+** Phase 2: GitHub Webhook
+
+*** 2.1 Map base.edn Entries to GitHub Repos
+
+Add an optional =:github-repo= key to entries sourced from GitHub:
+
+#+begin_src clojure
+{:name        "http://dataexchange.clinicalgenome.org/gci-express"
+ :source      "https://raw.githubusercontent.com/clingen-data-model/data-exchange-shared-json/master/json-from-gene-express/gci-express-with-entrez-ids.json"
+ :target      "gci-express-with-entrez-ids.json"
+ :format      :genegraph.api.base/gci-express
+ :github-repo "clingen-data-model/data-exchange-shared-json"}
+#+end_src
+
+At startup, build a lookup map =repo->entries= from this annotation:
+
+#+begin_src clojure
+(def repo->entries
+  (->> base-files
+       (filter :github-repo)
+       (group-by :github-repo)))
+#+end_src
+
+*** 2.2 Webhook Endpoint
+
+Add a =POST /webhook/github= route to =ready-server=.
+
+The handler:
+
+1. Reads the raw request body as bytes.
+2. Verifies the =X-Hub-Signature-256= header using HMAC-SHA256 with a webhook
+   secret stored in GCP Secret Manager (new secret: =github-webhook-secret=,
+   added to =env/build-environment= calls in =local-env=).
+3. Parses the JSON body. If the =X-GitHub-Event= header is not ="push"=, return
+   200 immediately (ignore other event types).
+4. Extracts the repository full name (=repository.full_name= in the payload).
+5. Looks up =repo->entries= for that repo name.
+6. For each matching entry, publishes a fetch event to =:fetch-base-events=.
+7. Returns 200.
+
+The endpoint needs access to the running app and the webhook secret. Both can be
+injected via a closure constructed after startup, similar to the scheduler.
+
+#+begin_src clojure
+(defn make-webhook-handler [app webhook-secret]
+  (fn [request]
+    (let [body-bytes (-> request :body .readAllBytes)
+          signature  (get-in request [:headers "x-hub-signature-256"])
+          event-type (get-in request [:headers "x-github-event"])]
+      (if-not (valid-signature? webhook-secret body-bytes signature)
+        {:status 401 :body "invalid signature"}
+        (do
+          (when (= event-type "push")
+            (let [payload  (json/parse-string (String. body-bytes) true)
+                  repo     (get-in payload [:repository :full_name])
+                  entries  (get repo->entries repo [])]
+              (doseq [entry entries]
+                (p/publish (get-in app [:topics :fetch-base-events])
+                           {::event/key  (:name entry)
+                            ::event/data entry}))))
+          {:status 200 :body "ok"})))))
+#+end_src
+
+HMAC verification:
+
+#+begin_src clojure
+(defn valid-signature? [secret body-bytes signature]
+  (when (and secret signature)
+    (let [mac     (javax.crypto.Mac/getInstance "HmacSHA256")
+          key     (javax.crypto.spec.SecretKeySpec. (.getBytes secret) "HmacSHA256")
+          _       (.init mac key)
+          digest  (.doFinal mac body-bytes)
+          expected (str "sha256=" (hex-encode digest))]
+      (MessageDigest/isEqual (.getBytes expected) (.getBytes signature)))))
+#+end_src
+
+=hex-encode= can use =org.apache.commons.codec.binary.Hex= (already on the
+classpath via Kafka deps) or a small hand-rolled loop.
+
+*** 2.3 HTTP Server Changes
+
+The =ready-server= map is currently static. To inject the handler closure, it
+must be constructed after startup. Two options:
+
+- **Option A**: Keep =ready-server= as a static map but replace the webhook
+  route value with a var pointing to an atom that holds the handler function.
+  The =-main= function resets the atom after startup. Simplest change.
+- **Option B**: Generate the =ready-server= map inside =-main= after app
+  initialization, passing the app reference in. Cleaner but requires restructuring
+  app startup.
+
+Option A is preferred to minimize structural changes.
+
+*** 2.4 GitHub Webhook Registration
+
+Configure webhooks on each watched repository pointing to the public URL of the
+genegraph-base service (=https://<hostname>/webhook/github=) with:
+- Content type: =application/json=
+- Events: =push= only
+- Secret: value of =github-webhook-secret=
+
+This is a one-time manual step per repository.
+
+** Phase 3: Integration and Cleanup
+
+- Remove the stub =:scheduled-fetch-base= topic from =base-app-def= if unused
+  (polling publishes directly to =:fetch-base-events=).
+- Add =data.json= (or =cheshire=) as a dependency for webhook JSON parsing if
+  not already present. Check =deps.edn=.
+- Add =github-webhook-secret= to the GCP Secret Manager for each environment
+  and add it to the =env/build-environment= calls.
+- Update =base-test-app-def= in =dev/user.clj= to exercise the polling path
+  locally without Kafka.
+- Document the GitHub webhook setup steps in =CLAUDE.md=.
+
+** Summary of Changes
+
+| Location | Change |
+|---|---|
+| =resources/base.edn= | Add =:poll true=, =:hash-check-url=, =:hash-check-type=, =:github-repo= keys to relevant entries |
+| =src/genegraph/base.clj= | Implement =check-remote-hash= interceptor |
+| =src/genegraph/base.clj= | Implement =check-for-base-updates= with 24 h gating |
+| =src/genegraph/base.clj= | Add =start-update-scheduler= wired to running app |
+| =src/genegraph/base.clj= | Add =webhook-handler= and =valid-signature?= |
+| =src/genegraph/base.clj= | Add =POST /webhook/github= route to HTTP server |
+| =src/genegraph/base.clj= | Update =-main= to start scheduler and wire webhook handler |
+| =src/genegraph/base.clj= | Add =github-webhook-secret= to =env/build-environment= calls |
+| =deps.edn= | Add JSON parsing library if not present |
+
+** Non-Goals / Out of Scope
+
+- Retry logic for failed fetches (existing framework handles Kafka redelivery).
+- Sub-daily polling (daily is sufficient per spec).
+- Persisting =last-poll-times= across restarts (one extra round of fetches on
+  deploy is acceptable and desirable).
+- Monitoring / alerting for fetch failures (separate concern).

@@ -98,11 +98,13 @@
  {:name "http://purl.obolibrary.org/obo/hp.owl"
   :source "http://purl.obolibrary.org/obo/hp.owl",
   :target "hp.owl",
-  :format :genegraph.framework.storage.rdf/rdf-xml}
+  :format :genegraph.framework.storage.rdf/rdf-xml
+  :poll 24}
  {:name "http://purl.obolibrary.org/obo/mondo.owl"
   :source "http://purl.obolibrary.org/obo/mondo.owl",
   :target "mondo.owl",
-  :format :genegraph.framework.storage.rdf/rdf-xml}
+  :format :genegraph.framework.storage.rdf/rdf-xml
+  :poll 24}
  #_{:name "http://www.ebi.ac.uk/efo"
     :source "http://www.ebi.ac.uk/efo/efo.owl"
   :target "efo.owl"
@@ -114,7 +116,8 @@
  {:name "https://www.genenames.org/"
   :source "https://storage.googleapis.com/public-download-files/hgnc/json/json/hgnc_complete_set.json"
   :target "hgnc.json",
-  :format :genegraph.api.base/hgnc}
+  :format :genegraph.api.base/hgnc
+  :poll 24}
  {:name "http://dataexchange.clinicalgenome.org/gci-express"
   :source "https://raw.githubusercontent.com/clingen-data-model/data-exchange-shared-json/master/json-from-gene-express/gci-express-with-entrez-ids.json"
   :target "gci-express-with-entrez-ids.json"
@@ -135,31 +138,41 @@
   :action :genegraph.api.base/load-gff}
  {:name "https://www.ncbi.nlm.nih.gov/clinvar/"
   :source "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/xml/ClinVarVCVRelease_00-latest.xml.gz"
+  :hash-check-source "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/xml/ClinVarVCVRelease_00-latest.xml.gz.md5"
+  :hash-check-type :md5hex
   :target "clinvar.xml.gz"
   :format :genegraph.api.base/clinvar
-  :action :genegraph.api.base/load-clinvar}
+  :action :genegraph.api.base/load-clinvar
+  :poll 24}
  {:name "https://genegraph.app/resources"
   :source "https://raw.githubusercontent.com/clingen-data-model/genegraph-api/refs/heads/main/base-data/genegraph-resources.ttl"
   :target "genegraph-resources.ttl"
   :format :genegraph.framework.storage.rdf/turtle}
  {:name "https://www.ncbi.nlm.nih.gov/clinvar/submitters"
   :source "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/organization_summary.txt"
+  :hash-check-source "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/organization_summary.txt.md5"
+  :hash-check-type :md5hex
   :target "clinvar-submitters.txt"
-  :format :genegraph.api.base/clinvar-submitters}
+  :format :genegraph.api.base/clinvar-submitters
+  :poll 24}
  {:name "https://thegencc.org/"
   :source "https://search.thegencc.org/download/action/submissions-export-csv"
   :target "gencc.csv"
-  :format :genegraph.api.base/gencc}
+  :format :genegraph.api.base/gencc
+  :poll 24}
  {:name "https://www.ncbi.nlm.nih.gov/gtr/"
   :source "https://ftp.ncbi.nlm.nih.gov/pub/GTR/data/gtr_ftp.xml.gz"
   :target "gtr.xml.gz"
-  :format :genegraph.api.base/gtr}
+  :format :genegraph.api.base/gtr
+  :poll 24}
  {:name "https://affils.clinicalgenome.org/"
   :source "https://affils.clinicalgenome.org/api/affiliations_list/"
   :target "affils.json"
   :format :genegraph.api.base/affils-json
-  :headers {"X-Api-Key" :affils-service-key}}
+  :headers {"X-Api-Key" :affils-service-key}
+  :poll 24}
  {:name "https://omim.org/genemap"
   :source "https://data.omim.org/downloads/{{omim-thn}}/genemap2.txt"
   :target "omim-genemap.txt"
-  :format :genegraph.api.base/omim-genemap}]
+  :format :genegraph.api.base/omim-genemap
+  :poll 24}]

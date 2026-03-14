@@ -8,16 +8,21 @@
             [genegraph.framework.env :as env]
             [hato.client :as hc]
             [io.pedestal.interceptor :as interceptor]
+            [io.pedestal.interceptor.chain :as chain]
             [io.pedestal.log :as log]
             [clojure.edn :as edn]
             [clojure.java.io :as io])
-  (:import [java.io File InputStream OutputStream]
+  (:import [java.io File InputStream OutputStream PushbackReader]
            [java.nio.channels Channels]
            [java.time Instant ZonedDateTime]
            [java.time.temporal TemporalUnit Temporal]
            [java.util.concurrent ScheduledThreadPoolExecutor
             ExecutorService ScheduledExecutorService TimeUnit])
   (:gen-class))
+
+(def base-files
+  (with-open [r (-> "base.edn" io/resource io/reader PushbackReader.)]
+    (edn/read r)))
 
 (def admin-env
   (if (or (System/getenv "DX_JAAS_CONFIG_DEV")
@@ -94,6 +99,9 @@
       ::handle
       (assoc :path (get-in event [::event/data :target]))))
 
+(defn hash-file-handle [event]
+  (str (output-handle event) ".hash"))
+
 (defn success? [{status ::http-status}]
   (and (<= 200 status) (< status 400)))
 
@@ -107,27 +115,124 @@
     (str first-section (get env (keyword secret)) second-section)
     source-url))
 
-(embed-secrets-in-source "https://data.omim.org/downloads/{{omim-thn}}/genemap2.txt")
-(embed-secrets-in-source "https://www.ncbi.nlm.nih.gov/gtr/")
-(get env :omim-thn)
+(comment
+  (->> base-files
+       (filterv :hash-check-source)
+       (mapv :hash-check-source)
+       (mapv embed-secrets-in-source))
+  )
+
+(defn stored-object-hash [handle type]
+  (case type
+    :md5 (.getMd5 handle)
+    :md5hex (.getMd5ToHexString handle)
+    :crc32c (.getCrc32c handle)
+    :crc32chex (.getCrc32cToHexString handle)))
+
+(comment
+
+  (let [h (storage/as-handle
+           {:type :gcs
+            :bucket "genegraph-base"
+            :path "clinvar.xml.gz"})]
+    (mapv #(stored-object-hash h %) [:md5 :md5hex :crc32c :crc32chex]))
+
+  )
+
+(defn hash-type [event]
+  (get-in event [::event/data :hash-type] :crc32c))
+
+(defn target-hash [event]
+  (-> event
+      output-handle
+      storage/as-handle
+      (stored-object-hash (hash-type event))))
+
+(defn add-prior-hash-fn [event]
+  (try 
+    (assoc event
+           ::prior-hash
+           (target-hash event))
+    (catch Exception e event)))
+
+(def add-prior-hash
+  (interceptor/interceptor
+   {:name ::prior-hash
+    :enter (fn [e] (add-prior-hash-fn e))}))
+
+(defonce http-client (hc/build-http-client {:redirect-policy :always}))
+
+(defn write-iri-to-storage-handle!
+  ([iri storage-handle]
+   (write-iri-to-storage-handle! iri storage-handle {}))
+  ([iri storage-handle http-opts]
+   (let [base-opts {:http-client http-client
+                    :as :stream}
+         response (hc/get (embed-secrets-in-source iri)
+                          (merge http-opts
+                                 base-opts))]
+     (when (instance? InputStream (:body response))
+       (with-open [os (io/output-stream (storage/as-handle storage-handle))]
+         (.transferTo (:body response) os)))
+     (:status response))))
+
+(defn get-iri
+  ([iri]
+   (get-iri iri {}))
+  ([iri http-opts]
+   (let [base-opts {:http-client http-client}
+         response (hc/get (embed-secrets-in-source iri)
+                          (merge http-opts
+                                 base-opts))]
+     (:body response))))
+
+(defn iri-body-matches-storage-object? [iri storage-handle]
+  (= (get-iri iri)
+     (-> storage-handle storage/as-handle slurp)))
+
+;; technically I'm not doing any hashing here, only comparing
+;; equality on a pre-created hash file
+(defn check-hash-file-fn [event]
+  (if-let [hash-source (get-in event [::event/data :hash-check-source])]
+    (if (iri-body-matches-storage-object? hash-source
+                                          (hash-file-handle event))
+      (do (log/info :fn ::check-hash-file-fn
+                    :outcome :file-is-current)
+          (chain/terminate event))
+      (do (log/info :fn ::check-hash-file-fn
+                    :outcome :file-is-not-current)
+          (assoc event ::stale? true)))
+    event)) ; no hash file to check, need to download to check freshness
+
+(def check-hash-file
+  (interceptor/interceptor
+   {:name ::check-hash-file
+    :enter (fn [e] (check-hash-file-fn e))}))
+
+(comment
+  (def clinvar-hash-iri
+    "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/xml/ClinVarVCVRelease_00-latest.xml.gz.md5")
+
+  (def clinvar-hash-handle
+    {:type :gcs
+     :bucket "genegraph-base"
+     :path "clinvar.xml.gz.hash"})
+  (write-iri-to-storage-handle!
+   clinvar-hash-iri
+   clinvar-hash-handle)
+  (get-iri clinvar-hash-iri)
+
+  (iri-body-matches-storage-object? clinvar-hash-iri clinvar-hash-handle))
 
 (defn fetch-file-fn [event]
   (log/info :fn ::fetch-file-fn
             :source (get-in event [::event/data :source])
             :name  (get-in event [::event/data :name])
             :status :started)
-  (let [headers (event->headers event)
-        base-opts {:http-client (hc/build-http-client {:redirect-policy :always})
-                   :as :stream}
-        opts (if headers (assoc base-opts :headers headers) base-opts)
-        response (hc/get (embed-secrets-in-source
-                          (get-in event [::event/data :source]))
-                         opts)]
-    (when (instance? InputStream (:body response))
-      (with-open [os (io/output-stream (storage/as-handle (output-handle event)))]
-        (.transferTo (:body response) os)))
-    (assoc event
-           ::http-status (:status response))))
+  (assoc event
+         ::http-status
+         (write-iri-to-storage-handle! (get-in event [::event/data :source])
+                                       (output-handle event))))
 
 (def fetch-file
   (interceptor/interceptor
@@ -135,11 +240,13 @@
     :enter (fn [e] (fetch-file-fn e))}))
 
 (defn publish-base-file-fn [event]
-  (event/publish event {::event/topic :base-data
-                        ::event/key (get-in event [::event/data :name])
-                        ::event/data (-> event
-                                         ::event/data
-                                         (assoc :source (output-handle event)))}))
+  (if (not= (target-hash event) (::prior-hash event))
+    (event/publish event {::event/topic :base-data
+                          ::event/key (get-in event [::event/data :name])
+                          ::event/data (-> event
+                                           ::event/data
+                                           (assoc :source (output-handle event)))})
+    event))
 
 (def publish-base-file
   (interceptor/interceptor
@@ -166,10 +273,35 @@
   {:name :fetch-base-file
    :type :processor
    :subscribe :fetch-base-events
-   :interceptors [fetch-file
+   :interceptors [check-hash-file
+                  add-prior-hash
+                  fetch-file
                   publish-base-file]
    ::event/metadata {::handle
                      (assoc (:fs-handle env) :path "base/")}})
+
+(defn poll-base-records-fn [event]
+  (log/info :fn ::poll-base-records-fn
+            :action :initiating-poll)
+  (reduce
+   (fn [e base-record]
+     (event/publish e {::event/data base-record
+                       ::event/key (:name base-record)
+                       ::event/topic :fetch-base-events}))
+   
+   event
+   (filterv :poll base-files)))
+
+(def poll-base-records-int
+  (interceptor/interceptor
+   {:name ::poll-base-records
+    :enter (fn [e] (poll-base-records-fn e))}))
+
+(def poll-base-processor
+  {:type :processor
+   :name :poll-base-processor
+   :subscribe :poll-base-records
+   :interceptors [poll-base-records-int]})
 
 (def ready-server
   {:gene-validity-server
@@ -189,16 +321,19 @@
    :topics {:fetch-base-events
             (assoc fetch-base-events-topic
                    :type :kafka-consumer-group-topic
-                   :kafka-consumer-group consumer-group)
-            :scheduled-fetch-base
-            {:type :simple-queue-topic
-             :name :scheduled-fetch-base}
+                   :kafka-consumer-group consumer-group
+                   :create-producer true)
+            :poll-base-records
+            {:name :poll-base-records
+             :type :timer-topic
+             :interval (* 1000 60 60 12)} ; 12 hrs
             :base-data
             (assoc base-data-topic
                    :type :kafka-producer-topic)}
    :processors {:fetch-base (assoc fetch-base-processor
                                    :kafka-cluster :data-exchange
-                                   :kafka-transactional-id (qualified-kafka-name "fetch-base"))}
+                                   :kafka-transactional-id (qualified-kafka-name "fetch-base"))
+                :poll-base-processor poll-base-processor}
    :http-servers ready-server})
 
 (defonce update-publisher-executor
@@ -210,7 +345,6 @@
                         0
                         1
                         TimeUnit/MINUTES))
-
 
 
 

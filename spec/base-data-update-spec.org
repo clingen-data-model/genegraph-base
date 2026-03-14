@@ -1,0 +1,27 @@
+* Problem
+
+The Genegraph Base data requires a somewhat tedious manual send to a Kafka topic to trigger loading the data. The problem with this is that I have to get in manually and know when to trigger an update. This has resulted in inaccurate and less than timely data when certain files change. This is a problem for MONDO and will be for ClinVar. Additionally, some of the files are updated by me and stored on GitHub. These files change infrequently, but when they are changed, I will want instant updates.
+
+I am happy with the external interface to this being files stored on google cloud, with updates published on the data exchange.
+
+* User-facing issue
+
+Mondo updates don't trigger automatically.  I have to babysit the process.
+
+Remvoing GV express records is a multi-step process. I would prefer to simply make a commit to a GitHub repo and have the updates happen automatically.
+
+* Options
+
+** HTTP Endpoint
+
+Github webhooks could wire into this, notify when updates are available.
+
+** Poll for changes
+
+Sometimes the only file that is changed is the file itself, which will need to be downloaded to check.
+
+Other times there will be a md5 file (or similar) that can be checked prior to performing any other action. This is the case for ClinVar, which has a file containing the md5 hash of the download. I would prefer this to downloading a large file that has not been updated frequently.
+
+This will be a subset of the files (MONDO, ClinVar, HPO). Polling for changes more often than daily should be unnecessary.
+
+
