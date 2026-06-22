@@ -156,10 +156,12 @@
   :format :genegraph.api.base/clinvar-submitters
   :poll 24}
  {:name "https://thegencc.org/"
-  :source "https://search.thegencc.org/download/action/submissions-export-csv"
+  :source #_"https://search.thegencc.org/download/action/submissions-export-csv"
+  "https://thegencc.org/download/action/submissions-export-csv?format=new"
   :target "gencc.csv"
   :format :genegraph.api.base/gencc
   :poll 24}
+ {:name }
  {:name "https://www.ncbi.nlm.nih.gov/gtr/"
   :source "https://ftp.ncbi.nlm.nih.gov/pub/GTR/data/gtr_ftp.xml.gz"
   :target "gtr.xml.gz"
